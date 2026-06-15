@@ -1,0 +1,631 @@
+TOTAL PAGES: 14
+---PAGE 1---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 1 sur 14 
+  
+TP 4 : MERN Stack  
+ 
+ 
+Objectif :  
+Construire une application web simple de gestion de tâches (To -Do List) avec le stack  MERN. 
+Les étudiants apprendront à connecter une base de données MongoDB à une API REST 
+développée avec Node.js et Express.js, et à créer une interface utilisateur avec React , intégrant 
+une authentification utilisateur (inscription/connexion) à l’aide de JWT.  
+ 
+On veut réaliser une application  de To -Dow -List montrée  ci-dessous  : 
+ 
+Un nouvel  utilisateur doit s’inscri re pour a voir sa prop re session.  
+Une fois s ’inscrit , son compte sera ajou té dans la base de do nnées M ongoDB (Local et/ou 
+Distant)  
+Un fois l ’utilisat eur se connecte , un jeton sera associé à son compte . 
+ 
+En cas d ’erreur, un message sera lancé  :  
+ 
+Après une conne xion ré ussite, vous pouvez ajouter des tâches.  
+
+---PAGE 2---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 2 sur 14 
+  
+Étape 1 : Configuration de l’environnement  
+1. Installation des outils :   
+• Installez Node.js (version récente) et npm.  
+• Vérifiez les versions avec les commandes :  
+node -v 
+npm -v 
+ 
+2. Création du projet :   
+• Créez un dossier principal mern -todo-app. 
+• À l’intérieur, créez deux sous -dossiers : backend  et frontend . 
+• Initialisez un projet Node.js dans backend   
+cd backend  
+npm init -y 
+3. Installation des dépendances backend :   
+• Installez Express, Mongoose (pour MongoDB), et les outils utiles :  
+ 
+• Configurez nodemon dans package.json pour redémarrer automatiquement le 
+serveur :  
+ 
+npm install express mongoose cors dotenv  
+npm install --save-dev nodemon  
+npm install jsonwebtoken bcryptjs  
+"scripts" : { 
+    "start": "node server.js ", 
+    "dev": "nodemon server.js " 
+  }, 
+---PAGE 3---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 3 sur 14 
+ Étape 2 : Mise en place du Backend  
+1. Connexion à MongoDB :   
+• Créez un compte gratuit sur MongoDB Atlas  ou MongoDB local, et obtenez une 
+URL de connexion.  
+• Créez un fichier .env dans backend avec :  
+MONGO_URI =mongodb+srv://<votre -user>:<votre -mdp>@cluster0.mongodb.net/  mern-
+todo-app?retryWrites =true&w=majority  
+# MONGO_URI=mongodb://localhost:27017/mern -todo-app 
+PORT=3001 
+• Créez un fichier server.js :  
+const express = require("express"); 
+const mongoose  = require("mongoose "); 
+const cors = require("cors"); 
+require("dotenv").config(); 
+ 
+const app = express(); 
+app.use(express.json()); 
+app.use(cors()); 
+ 
+const mongoURI  = process.env.MONGO_URI ; 
+if (!mongoURI ) { 
+  console.error("MongoDB URI is undefined. Check your environment variables. "); 
+  process.exit(1); 
+} 
+ 
+mongoose  
+  .connect(mongoURI ) 
+  .then(() => console.log("MongoDB connecté ")) 
+  .catch((err) => console.log(err)); 
+ 
+// Ajouter les routes  
+const taskRoutes  = require("./routes/tasks "); 
+app.use("/api/tasks ", taskRoutes ); 
+ 
+const PORT = process.env.PORT || 3001; 
+app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`)); 
+ 
+2. Modèle de tâche (Schema MongoDB) :   
+• Créez un dossier models  et un fichier Task.js : 
+---PAGE 4---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 4 sur 14 
+ const mongoose  = require("mongoose "); 
+ 
+const taskSchema  = new mongoose .Schema({ 
+  title: { type: String, required: true }, 
+  completed: { type: Boolean, default: false }, 
+  createdAt: { type: Date, default: Date.now }, 
+}); 
+ 
+module.exports = mongoose .model("Task", taskSchema ); 
+3. Routes API :   
+• Créez un dossier routes et un fichier tasks.js :  
+const express = require('express'); 
+const router = express.Router(); 
+const Task = require('../models/Task '); 
+const auth = require('../middleware/auth '); 
+ 
+// Récupérer les tâches de l'utilisateur connecté  
+router.get('/', auth, async (req, res) => { 
+  try { 
+    const tasks = await Task.find({ user: req.user.id }); 
+    res.json(tasks); 
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ message: 'Erreur serveur ' }); 
+  } 
+}); 
+ 
+// Ajouter une tâche  
+router.post('/', auth, async (req, res) => { 
+  try { 
+    const task = new Task({ title: req.body.title, user: req.user.id }); 
+    await task.save(); 
+    res.json(task); 
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ message: 'Erreur serveur ' }); 
+  } 
+}); 
+ 
+// Supprimer une tâche  
+router.delete('/:id', auth, async (req, res) => { 
+  try { 
+    const task = await Task.findOne({ _id: req.params.id, user: req.user.id }); 
+    if (!task) { 
+      return res.status(404).json({ message: 'Tâche non trouvée ou non 
+autorisée ' }); 
+    } 
+    await Task.deleteOne ({ _id: req.params.id }); // Suppression explicite  
+    res.json({ message: 'Tâche supprimée ' }); 
+  } catch (err) { 
+    console.error(err); 
+    res.status(500).json({ message: 'Erreur serveur lors de la suppression ' }); 
+  } 
+}); 
+---PAGE 5---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 5 sur 14 
+  
+module.exports = router; 
+ 
+• Ajoutez les routes dans server.js :  
+// Ajouter les routes  
+const taskRoutes  = require("./routes/tasks "); 
+app.use("/api/tasks ", taskRoutes ); 
+4. Testez le backend :   
+• Lancez le serveur avec npm run dev.  
+• Utilisez Postman pour tester les endpoints :  
+o GET http://localhost: 3001/api/tasks  
+o POST http://localhost: 3001/api/tasks avec { "title": "Faire le TP" }  
+o DELETE http://localhost: 3001/api/tasks/<id>  
+Étape 2.1 : Mise en place du Backend  (Authentification)  
+1. Modèle utilisateur (Schema MongoDB) :   
+• Dans models , créez un fichier User.js  : 
+const mongoose  = require("mongoose "); 
+ 
+const userSchema  = new mongoose .Schema({ 
+  email: { type: String, required: true, unique: true }, 
+  password: { type: String, required: true }, 
+  createdAt: { type: Date, default: Date.now }, 
+}); 
+ 
+module.exports = mongoose .model("User", userSchema ); 
+ 
+2. Mise à jour du modèle Task :   
+• Associez chaque tâche à un utilisateur en modifiant models/Task.js  : 
+const mongoose  = require("mongoose "); 
+ 
+const taskSchema  = new mongoose .Schema({ 
+  title: { type: String, required: true }, 
+  completed: { type: Boolean, default: false }, 
+  user: { type: mongoose .Schema.Types.ObjectId , ref: "User", required: true }, 
+  createdAt: { type: Date, default: Date.now }, 
+}); 
+ 
+module.exports = mongoose .model("Task", taskSchema ); 
+ 
+3. Routes d’authentification :   
+• Créez dans le dossier routes  un fichier auth.js  : 
+---PAGE 6---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 6 sur 14 
+ const express = require("express"); 
+const router = express.Router(); 
+const bcrypt = require("bcryptjs "); 
+const jwt = require("jsonwebtoken "); 
+const User = require("../models/User "); 
+ 
+// Inscription  
+router.post("/register ", async (req, res) => { 
+  const { email, password  } = req.body; 
+  const hashedPassword  = await bcrypt.hash(password , 10); 
+  try { 
+    const user = new User({ email, password: hashedPassword  }); 
+    await user.save(); 
+    res.json({ message: "Utilisateur créé " }); 
+  } catch (err) { 
+    res.status(400).json({ message: "Email déjà utilisé " }); 
+  } 
+}); 
+ 
+// Connexion  
+router.post("/login", async (req, res) => { 
+  const { email, password  } = req.body; 
+  const user = await User.findOne({ email }); 
+  if (!user || !(await bcrypt.compare(password , user.password ))) { 
+    return res.status(401).json({ message: "Identifiants invalides " }); 
+  } 
+  const token = jwt.sign({ id: user._id }, "votre_secret_jwt ", { 
+    expiresIn: "1h", 
+  }); 
+  res.json({ token }); 
+}); 
+ 
+module.exports = router; 
+ 
+4. Middleware d’authentification :   
+• Créez un fichier middleware/auth.js  : 
+const jwt = require("jsonwebtoken "); 
+ 
+const auth = (req, res, next) => { 
+  const token = req.header("Authorization ")?.replace("Bearer ", ""); 
+  if (!token) return res.status(401).json({ message: "Accès refusé " }); 
+  try { 
+    const decoded = jwt.verify(token, "votre_secret_jwt "); 
+    req.user = decoded; 
+    next(); 
+  } catch (err) { 
+    res.status(401).json({ message: "Token invalide " }); 
+  } 
+}; 
+ 
+module.exports = auth; 
+5. Mise à jour des routes Task :   
+• Modifiez routes/tasks.js  pour sécuriser les routes et associer les tâches à 
+l’utilisateur connecté :  
+---PAGE 7---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 7 sur 14 
+ const express = require("express"); 
+const router = express.Router(); 
+const Task = require("../models/Task "); 
+const auth = require("../middleware/auth "); 
+ 
+// Récupérer les tâches de l'utilisateur connecté  
+router.get("/", auth, async (req, res) => { 
+  const tasks = await Task.find({ user: req.user.id }); 
+  res.json(tasks); 
+}); 
+ 
+// Ajouter une tâche  
+router.post("/", auth, async (req, res) => { 
+  const task = new Task({ title: req.body.title, user: req.user.id }); 
+  await task.save(); 
+  res.json(task); 
+}); 
+ 
+// Supprimer une tâche  
+router.delete("/:id", auth, async (req, res) => { 
+  const task = await Task.findOne({ _id: req.params.id, user: req.user.id }); 
+  if (!task) return res.status(404).json({ message: "Tâche non trouvée " }); 
+  await task.remove(); 
+  res.json({ message: "Tâche supprimée " }); 
+}); 
+ 
+module.exports = router; 
+ 
+6. Mise à jour de server.js  :  
+• Ajoutez les routes d’authentification :  
+---PAGE 8---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 8 sur 14 
+ const express = require("express"); 
+const mongoose  = require("mongoose "); 
+const cors = require("cors"); 
+require("dotenv").config(); 
+ 
+const app = express(); 
+app.use(express.json()); 
+app.use(cors()); 
+ 
+const mongoURI  = process.env.MONGO_URI ; 
+if (!mongoURI ) { 
+  console.error("MongoDB URI is undefined. Check your environment variables. "); 
+  process.exit(1); 
+} 
+ 
+mongoose  
+  .connect(mongoURI ) 
+  .then(() => console.log("MongoDB connecté ")) 
+  .catch((err) => console.log(err)); 
+ 
+// Ajouter les routes  
+const taskRoutes  = require("./routes/tasks "); 
+const authRoutes  = require('./routes/auth '); 
+app.use("/api/tasks ", taskRoutes ); 
+app.use('/api/auth ', authRoutes ); 
+ 
+const PORT = process.env.PORT || 3001; 
+app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`)); 
+ 
+7. Testez l’authentification :   
+• POST http://localhost: 3001 /api/auth/register  avec { "email": "test@ gmail .com", 
+"password": "123456" }  
+• POST http://localhost: 3001 /api/auth/login  avec les mêmes identifiants pour obtenir 
+un token.  
+• Ajoutez le token dans l’en -tête Authorization: Bearer <token>  pour tester les 
+endpoints /api/tasks . 
+ 
+ 
+ 
+  
+---PAGE 9---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 9 sur 14 
+ Étape 3 : Développement du Frontend (React)  
+Structure de la partie front end :  
+  
+ 
+components  : Composants réutilisables  
+• AuthForm .jsx : Formulaire 
+d'inscription/connexion  
+• TaskForm .jsx : Formulaire d'ajout de tâche  
+• TaskList .jsx : Liste des tâches  
+App.css  : Styles  globaux  
+App.js : Composant principal  
+axiosConfig.jsx  : Configuration d'Axios pour les 
+requêtes  
+index. js : Point d'entrée React  
+ 
+ 
+ 
+1. Initialisation du projet React :   
+• Dans le dossier frontend , lancez :  
+npx create -react -app .  
+npm install axios  
+ 
+2. Configuration d’Axios  
+Créez src/axiosConfig.js  pour centraliser la configuration des requêtes avec le token :  
+import axios from "axios"; 
+ 
+const api = axios.create({ 
+  baseURL: "http://localhost:3001/api ", 
+}); 
+ 
+api.interceptors .request.use((config) => { 
+  const token = localStorage .getItem("token"); 
+  if (token) { 
+    config.headers.Authorization  = `Bearer ${token}`; 
+  } 
+  return config; 
+
+---PAGE 10---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 10 sur 14 
+ }); 
+ 
+export default api; 
+3. Composant AuthForm  
+Créez src/components/AuthForm.js  pour gérer l’inscription et la connexion :  
+import React, { useState  } from "react"; 
+import api from "../axiosConfig "; 
+ 
+const AuthForm  = ({ setToken  }) => { 
+  const [email, setEmail ] = useState (""); 
+  const [password , setPassword ] = useState (""); 
+  const [isLogin, setIsLogin ] = useState (true); 
+ 
+  const handleSubmit  = async (e) => { 
+    e.preventDefault (); 
+    try { 
+      const endpoint  = isLogin ? "/auth/login " : "/auth/register "; 
+      const res = await api.post(endpoint , { email, password  }); 
+      if (isLogin) { 
+        setToken (res.data.token); 
+        localStorage .setItem("token", res.data.token); 
+      } else { 
+        alert("Inscription réussie, connectez -vous !"); 
+        setIsLogin (true); 
+      } 
+    } catch (err) { 
+      alert(err.response ?.data?.message || "Erreur"); 
+    } 
+  }; 
+ 
+  return ( 
+    <div className ="auth-form"> 
+      <h2>{isLogin ? "Connexion " : "Inscription "}</h2> 
+      <form onSubmit ={handleSubmit }> 
+        <input 
+          type="email" 
+          value={email} 
+          onChange ={(e) => setEmail (e.target.value)} 
+          placeholder ="Email" 
+          required  
+        /> 
+        <input 
+          type="password " 
+          value={password } 
+          onChange ={(e) => setPassword (e.target.value)} 
+          placeholder ="Mot de passe " 
+          required  
+        /> 
+        <button type="submit">{isLogin ? "Se connecter " : "S’inscrire "}</button> 
+      </form> 
+      <button onClick={() => setIsLogin (!isLogin)}> 
+        {isLogin 
+          ? "Pas de compte ? Inscrivez -vous" 
+---PAGE 11---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 11 sur 14 
+           : "Déjà un compte ? Connectez -vous"} 
+      </button> 
+    </div> 
+  ); 
+}; 
+ 
+export default AuthForm ; 
+4. Composant TaskForm  
+Créez src/components/TaskForm.js  pour ajouter une nouvelle tâche :  
+import React, { useState  } from "react"; 
+import api from "../axiosConfig "; 
+ 
+const TaskForm  = ({ setTasks  }) => { 
+  const [newTask, setNewTask ] = useState (""); 
+ 
+  const handleSubmit  = async (e) => { 
+    e.preventDefault (); 
+    if (!newTask) return; 
+    try { 
+      const res = await api.post("/tasks", { title: newTask }); 
+      setTasks ((prev) => [...prev, res.data]); 
+      setNewTask (""); 
+    } catch (err) { 
+      alert("Erreur lors de l’ajout de la tâche "); 
+    } 
+  }; 
+ 
+  return ( 
+    <form onSubmit ={handleSubmit } className ="task-form"> 
+      <input 
+        value={newTask} 
+        onChange ={(e) => setNewTask (e.target.value)} 
+        placeholder ="Nouvelle tâche " 
+        required  
+      /> 
+      <button type="submit">Ajouter</button> 
+    </form> 
+  ); 
+}; 
+ 
+export default TaskForm ; 
+5. Composant TaskList  
+Créez src/components/TaskList.js  pour afficher et supprimer les tâches :  
+---PAGE 12---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 12 sur 14 
+ import React from "react"; 
+import api from "../axiosConfig "; 
+ 
+const TaskList  = ({ tasks, setTasks  }) => { 
+  const deleteTask  = async (id) => { 
+    if (!id) { 
+      alert("ID de tâche invalide "); 
+      return; 
+    } 
+    try { 
+      await api.delete(`/tasks/${id}`); 
+      setTasks ((prev) => prev.filter((task) => task._id !== id)); 
+    } catch (err) { 
+      alert(err.response ?.data?.message || "Erreur lors de la suppression "); 
+    } 
+  }; 
+ 
+  return ( 
+    <ul className ="task-list"> 
+      {tasks.map((task) => ( 
+        <li key={task._id}> 
+          {task.title} 
+          <button onClick={() => deleteTask (task._id)}>Supprimer </button> 
+        </li> 
+      ))} 
+    </ul> 
+  ); 
+}; 
+ 
+export default TaskList ; 
+ 
+6. Composant  principal App  :  
+• Remplacez src/App.js  par : 
+---PAGE 13---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 13 sur 14 
+ import React, { useState , useEffect  } from "react"; 
+import api from "./axiosConfig "; 
+import AuthForm  from "./components/AuthForm "; 
+import TaskForm  from "./components/TaskForm "; 
+import TaskList  from "./components/TaskList "; 
+import "./App.css "; 
+ 
+function  App() { 
+  const [token, setToken ] = useState (localStorage .getItem("token") || ""); 
+  const [tasks, setTasks ] = useState ([]); 
+ 
+  useEffect (() => { 
+    if (token) { 
+      api 
+        .get("/tasks") 
+        .then((res) => setTasks (res.data)) 
+        .catch(() => { 
+          setToken (""); 
+          localStorage .removeItem ("token"); 
+        }); 
+    } 
+  }, [token]); 
+ 
+  const logout = () => { 
+    setToken (""); 
+    localStorage .removeItem ("token"); 
+    setTasks ([]); 
+  }; 
+ 
+  if (!token) { 
+    return <AuthForm  setToken ={setToken } />; 
+  } 
+ 
+  return ( 
+    <div className ="App"> 
+      <h1>Ma To-Do List</h1> 
+      <button onClick={logout}>Déconnexion </button> 
+      <TaskForm  setTasks ={setTasks } /> 
+      <TaskList  tasks={tasks} setTasks ={setTasks } /> 
+    </div> 
+  ); 
+} 
+ 
+export default App; 
+ 
+7. Styles Globaux  
+Mettez à jour src/App.css  : 
+.App { 
+  text-align: center; 
+  margin: 50px auto; 
+  max-width: 600px; 
+} 
+ 
+---PAGE 14---
+TP N°4 : Application MERN             ENSA Fès  
+  Prof : Youness IDRISSI KHAMLICHI  
+Page 14 sur 14 
+ .auth-form, .task-form { 
+  display: flex; 
+  flex-direction : column; 
+  gap: 10px; 
+  margin-bottom: 20px; 
+} 
+ 
+input { 
+  padding: 8px; 
+  font-size: 16px; 
+} 
+ 
+button { 
+  padding: 8px 16px; 
+  background -color: #007bff; 
+  color: white; 
+  border: none; 
+  cursor: pointer; 
+} 
+ 
+button:hover { 
+  background -color: #0056b3; 
+} 
+ 
+.task-list { 
+  list-style: none; 
+  padding: 0; 
+} 
+ 
+.task-list li { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 10px; 
+  border-bottom: 1px solid #ddd; 
+} 
+ 
+.task-list button { 
+  background -color: #dc3545; 
+} 
+ 
+.task-list button:hover { 
+  background -color: #a71d2a; 
+} 
+ 
+ 
+8. Testez le frontend :   
+• Lancez npm start  et vérifiez l’inscription, la connexion, et la gestion des tâches.  
+ 
