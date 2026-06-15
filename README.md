@@ -21,8 +21,8 @@ This project is a simple MERN stack To-Do List with user authentication and task
 ### 1. Backend
 
 1. Open a terminal in `backend/`
-2. Copy `.env.example` to `.env`
-3. Update `MONGO_URI` and `JWT_SECRET` in `.env`
+2. Copy `.env to `.env`
+3. Update `mongoURI` and `JWT_SECRET` in `.env`
 4. Install dependencies:
    ```bash
    npm install
@@ -35,7 +35,7 @@ This project is a simple MERN stack To-Do List with user authentication and task
 ### 2. Frontend
 
 1. Open a terminal in `frontend/`
-2. Copy `.env.example` to `.env` if you want to override the API URL
+2. Copy `.env` to `.env` if you want to override the API URL
 3. Install dependencies:
    ```bash
    npm install
@@ -55,6 +55,6 @@ This project is a simple MERN stack To-Do List with user authentication and task
 
 ## Notes
 
-- The backend defaults to `mongodb://127.0.0.1:27017/mern-todo-app` if no `MONGO_URI` is provided.
+- The backend defaults to `mongodb://127.0.0.1:27017/mern-todo-app` if no `mongoURI` is provided.
 - The frontend uses `http://localhost:3001/api` by default.
 - If you deploy the backend or change ports, update `frontend/.env` accordingly.
